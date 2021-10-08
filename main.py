@@ -75,10 +75,23 @@ def send_email(subject, body="(no content)"):
         logger.info("Email sent successfully!")
     except Exception as ex:
         logger.exception("Something went wrong")
+        raise
 
 
 def notify(slot, doctor_name):
     send_email(f"Свободный слот: {doctor_name} - {slot}")
+    json.dump({
+        "slot": str(slot),
+        "doctor_name": doctor_name,
+    }, open("status.json", "w"))
+
+
+def has_already_notified(slot, doctor_name):
+    try:
+        status = json.load(open("status.json"))
+    except Exception:
+        return False
+    return status['slot'] == str(slot) and status['doctor_name'] == doctor_name
 
 
 def run():
@@ -91,6 +104,7 @@ def run():
                     slot
                     and slot - timedelta(days=config["catch_within_days"])
                     <= datetime.now()
+                    and not has_already_notified(slot, doctor_name)
                 ):
                     logger.warning(f"Caught {slot} {doctor_name}")
                     notify(slot, doctor_name)
