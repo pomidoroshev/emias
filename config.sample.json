@@ -6,5 +6,12 @@
     "doctors": {
         "petrov": 456,
         "osipov": 789
+    },
+    "mail": {
+        "smtp_user": "some@user.com",
+        "smtp_password": "some_password",
+        "smtp_domain": "smtp.yandex.ru",
+        "smtp_port": 465,
+        "to": "to@email.com"
     }
 }

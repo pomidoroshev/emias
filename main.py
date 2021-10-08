@@ -1,10 +1,14 @@
 import json
 import secrets
+import smtplib
 import string
+import time
 from datetime import datetime, timedelta
+from email.message import EmailMessage
 from pprint import pprint
 from typing import Optional
 
+from loguru import logger
 import requests
 
 BASE_URL = "https://emias.info/api/new/eip5orch"
@@ -49,16 +53,42 @@ def get_schedule(doctor_name):
     return response.json()["result"].get("scheduleOfDay", [])
 
 
-def run():
-    for doctor_name in config["doctors"]:
-        schedule = get_schedule(doctor_name)
-        slot = earliest_slot(schedule)
-        if (
-            slot
-            and slot - timedelta(days=config["catch_within_days"]) <= datetime.now()
-        ):
-            print("Caught", slot, doctor_name)
+def send_email(subject, body="(no content)"):
+    msg = EmailMessage()
+    msg["subject"] = subject
+    msg["From"] = "DD <notify@doroshev.com>"
+    msg["To"] = config["mail"]["to"]
+    msg.set_content(body)
 
+    try:
+        smtp_server = smtplib.SMTP_SSL(
+            config["mail"]["smtp_domain"], config["mail"]["smtp_port"]
+        )
+        smtp_server.ehlo()
+        smtp_server.login(config["mail"]["smtp_user"], config["mail"]["smtp_password"])
+        smtp_server.send_message(msg)
+        smtp_server.close()
+        logger.info("Email sent successfully!")
+    except Exception as ex:
+        logger.exception("Something went wrong")
+
+
+def notify(slot, doctor_name):
+    send_email(f"Свободный слот: {doctor_name} - {slot}")
+
+
+def run():
+    while True:
+        for doctor_name in config["doctors"]:
+            schedule = get_schedule(doctor_name)
+            slot = earliest_slot(schedule)
+            if (
+                slot
+                and slot - timedelta(days=config["catch_within_days"]) <= datetime.now()
+            ):
+                logger.warning(f"Caught {slot} {doctor_name}")
+                notify(slot, doctor_name)
+        time.sleep(60)        
 
 if __name__ == "__main__":
     run()
