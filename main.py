@@ -53,8 +53,11 @@ def get_schedule(doctor_name):
     )
     data = response.json()
     if not "result" in data:
-        if "error" in data and data["error"]["data"]["code"] == "Read timed out":
-            logger.error("Timeout")
+        if (
+            "error" in data
+            and data["error"]["data"]["code"] != "APPOINTMENT_RECEPTION_NOT_FOUND"
+        ):
+            logger.error(f"Some error: {data['error']}")
             return []
         raise ValueError(f"Please check parameters, response: {data}")
     return data["result"].get("scheduleOfDay", [])
