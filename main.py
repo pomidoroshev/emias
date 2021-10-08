@@ -53,6 +53,9 @@ def get_schedule(doctor_name):
     )
     data = response.json()
     if not "result" in data:
+        if 'error' in data and data['error']['code'] == -32001:
+            logger.error('Timeout')
+            return []
         raise ValueError(f"Please check parameters, response: {data}")
     return data["result"].get("scheduleOfDay", [])
 
