@@ -35,24 +35,25 @@ def earliest_slot(schedule: list) -> Optional[datetime]:
 
 
 def get_schedule(doctor_name):
+    req = {
+        "jsonrpc": "2.0",
+        "id": gen_id(),
+        "method": "getAvailableResourceScheduleInfo",
+        "params": {
+            "appointmentId": config["appointment_id"],
+            "availableResourceId": config["doctors"][doctor_name],
+            "omsNumber": config["oms_number"],
+            "birthDate": config["birth_date"],
+        },
+    }
     response = requests.post(
         url=BASE_URL,
         params={"getAvailableResourceScheduleInfo": "null"},
-        json={
-            "jsonrpc": "2.0",
-            "id": gen_id(),
-            "method": "getAvailableResourceScheduleInfo",
-            "params": {
-                "appointmentId": config["appointment_id"],
-                "availableResourceId": config["doctors"][doctor_name],
-                "omsNumber": config["oms_number"],
-                "birthDate": config["birth_date"],
-            },
-        },
+        json=req,
     )
     data = response.json()
-    if not data.get("result"):
-        raise ValueError("Please check parameters")
+    if not "result" in data:
+        raise ValueError(f"Please check parameters, response: {data}")
     return data["result"].get("scheduleOfDay", [])
 
 
@@ -96,7 +97,7 @@ def run():
             time.sleep(60)
     except Exception as e:
         logger.exception("Error")
-        send_email(f"Скрипт поломался {e!r}")
+        send_email(f"Скрипт поломался", f"{e!r}")
 
 
 if __name__ == "__main__":
