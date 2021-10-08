@@ -8,8 +8,8 @@ from email.message import EmailMessage
 from pprint import pprint
 from typing import Optional
 
-from loguru import logger
 import requests
+from loguru import logger
 
 BASE_URL = "https://emias.info/api/new/eip5orch"
 
@@ -50,7 +50,10 @@ def get_schedule(doctor_name):
             },
         },
     )
-    return response.json()["result"].get("scheduleOfDay", [])
+    data = response.json()
+    if not data.get("result"):
+        raise ValueError("Please check parameters")
+    return data["result"].get("scheduleOfDay", [])
 
 
 def send_email(subject, body="(no content)"):
@@ -78,17 +81,23 @@ def notify(slot, doctor_name):
 
 
 def run():
-    while True:
-        for doctor_name in config["doctors"]:
-            schedule = get_schedule(doctor_name)
-            slot = earliest_slot(schedule)
-            if (
-                slot
-                and slot - timedelta(days=config["catch_within_days"]) <= datetime.now()
-            ):
-                logger.warning(f"Caught {slot} {doctor_name}")
-                notify(slot, doctor_name)
-        time.sleep(60)        
+    try:
+        while True:
+            for doctor_name in config["doctors"]:
+                schedule = get_schedule(doctor_name)
+                slot = earliest_slot(schedule)
+                if (
+                    slot
+                    and slot - timedelta(days=config["catch_within_days"])
+                    <= datetime.now()
+                ):
+                    logger.warning(f"Caught {slot} {doctor_name}")
+                    notify(slot, doctor_name)
+            time.sleep(60)
+    except Exception as e:
+        logger.exception("Error")
+        send_email(f"Скрипт поломался {e!r}")
+
 
 if __name__ == "__main__":
     run()
