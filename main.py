@@ -16,6 +16,32 @@ BASE_URL = "https://emias.info/api/new/eip5orch"
 config = json.load(open("config.json"))
 
 
+def get_appointment_id():
+    req = {
+        "jsonrpc": "2.0",
+        "id": gen_id(),
+        "method": "getAppointmentReceptionsByPatient",
+        "params": {
+            "omsNumber": config["oms_number"],
+            "birthDate": config["birth_date"],
+        },
+    }
+    response = requests.post(
+        url=BASE_URL,
+        params={"getAppointmentReceptionsByPatient": "null"},
+        json=req,
+    )
+    data = response.json()
+    result = data.get('result')
+    if result:
+        appointment = result[0]
+        return appointment['id']
+
+    if "error" in data:
+        logger.error(f"get_appointment_id error: {data['error']}")
+        raise ValueError(f"get_appointment_id error: {data['error']}")
+
+
 def gen_id():
     return "".join(
         secrets.choice(string.ascii_letters + string.digits) for _ in range(21)
@@ -34,13 +60,13 @@ def earliest_slot(schedule: list) -> Optional[datetime]:
     return None
 
 
-def get_schedule(doctor_name):
+def get_schedule(doctor_name, appointment_id):
     req = {
         "jsonrpc": "2.0",
         "id": gen_id(),
         "method": "getAvailableResourceScheduleInfo",
         "params": {
-            "appointmentId": config["appointment_id"],
+            "appointmentId": appointment_id,
             "availableResourceId": config["doctors"][doctor_name],
             "omsNumber": config["oms_number"],
             "birthDate": config["birth_date"],
@@ -106,8 +132,14 @@ def has_already_notified(slot, doctor_name):
 def run():
     try:
         while True:
+            try:
+                appointment_id = get_appointment_id()
+            except Exception:
+                time.sleep(30)
+                continue
+
             for doctor_name in config["doctors"]:
-                schedule = get_schedule(doctor_name)
+                schedule = get_schedule(doctor_name, appointment_id)
                 slot = earliest_slot(schedule)
                 if (
                     slot
