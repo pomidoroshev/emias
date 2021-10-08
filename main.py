@@ -80,10 +80,13 @@ def send_email(subject, body="(no content)"):
 
 def notify(slot, doctor_name):
     send_email(f"Свободный слот: {doctor_name} - {slot}")
-    json.dump({
-        "slot": str(slot),
-        "doctor_name": doctor_name,
-    }, open("status.json", "w"))
+    json.dump(
+        {
+            "slot": str(slot),
+            "doctor_name": doctor_name,
+        },
+        open("status.json", "w"),
+    )
 
 
 def has_already_notified(slot, doctor_name):
@@ -91,7 +94,7 @@ def has_already_notified(slot, doctor_name):
         status = json.load(open("status.json"))
     except Exception:
         return False
-    return status['slot'] == str(slot) and status['doctor_name'] == doctor_name
+    return status["slot"] == str(slot) and status["doctor_name"] == doctor_name
 
 
 def run():
