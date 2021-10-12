@@ -16,7 +16,7 @@ BASE_URL = "https://emias.info/api/new/eip5orch"
 config = json.load(open("config.json"))
 
 
-def get_appointment_id():
+def get_appointment_id() -> Optional[int]:
     req = {
         "jsonrpc": "2.0",
         "id": gen_id(),
@@ -40,6 +40,8 @@ def get_appointment_id():
     if "error" in data:
         logger.error(f"get_appointment_id error: {data['error']}")
         raise ValueError(f"get_appointment_id error: {data['error']}")
+
+    return None
 
 
 def gen_id() -> str:
@@ -88,7 +90,7 @@ def find_slots(schedule: list, catch_within_days: int) -> list[str]:
     return result
 
 
-def get_schedule(doctor_name: str, appointment_id) -> list:
+def get_schedule(doctor_name: str, appointment_id: Optional[int]) -> list:
     req = {
         "jsonrpc": "2.0",
         "id": gen_id(),
