@@ -1,7 +1,8 @@
 import json
+from typing import List
 
 
-def update_status(doctor_name: str, slots: list[str]) -> None:
+def update_status(doctor_name: str, slots: List[str]) -> None:
     try:
         current_status = json.load(open("status.json"))
     except Exception:
@@ -15,7 +16,7 @@ def update_status(doctor_name: str, slots: list[str]) -> None:
     json.dump(current_status, open("status.json", "w"))
 
 
-def load_status(doctor_name: str) -> list[str]:
+def load_status(doctor_name: str) -> List[str]:
     try:
         current_status = json.load(open("status.json"))
     except Exception:

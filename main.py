@@ -6,7 +6,7 @@ import time
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from pprint import pprint
-from typing import Optional
+from typing import List, Optional
 
 import requests
 from loguru import logger
@@ -52,8 +52,8 @@ def gen_id() -> str:
     )
 
 
-def find_slots(schedule: list, catch_within_days: int) -> list[str]:
-    result: list[str] = []
+def find_slots(schedule: list, catch_within_days: int) -> List[str]:
+    result: List[str] = []
     if not schedule:
         return result
 
@@ -119,7 +119,7 @@ def send_email(subject, body="(no content)"):
         raise
 
 
-def notify(slots: list[str], doctor_name: str) -> None:
+def notify(slots: List[str], doctor_name: str) -> None:
     if not slots:
         return
     if len(slots) == 1:
@@ -129,7 +129,7 @@ def notify(slots: list[str], doctor_name: str) -> None:
     update_status(doctor_name, slots)
 
 
-def has_already_notified(slots: list[str], doctor_name: str) -> bool:
+def has_already_notified(slots: List[str], doctor_name: str) -> bool:
     notified_slots = load_status(doctor_name)
     return notified_slots == slots
 
