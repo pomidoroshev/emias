@@ -11,6 +11,8 @@ from typing import Optional
 import requests
 from loguru import logger
 
+from status import load_status, update_status
+
 BASE_URL = "https://emias.info/api/new/eip5orch"
 
 config = json.load(open("config.json"))
@@ -48,29 +50,6 @@ def gen_id() -> str:
     return "".join(
         secrets.choice(string.ascii_letters + string.digits) for _ in range(21)
     )
-
-
-def update_status(doctor_name: str, slots: list[str]) -> None:
-    try:
-        current_status = json.load(open("status.json"))
-    except Exception:
-        current_status = {}
-
-    if doctor_name in current_status:
-        current_status[doctor_name] = [*{*current_status[doctor_name], *slots}]
-    else:
-        current_status[doctor_name] = slots
-
-    json.dump(current_status, open("status.json", "w"))
-
-
-def load_status(doctor_name: str) -> list[str]:
-    try:
-        current_status = json.load(open("status.json"))
-    except Exception:
-        current_status = {}
-
-    return current_status.get(doctor_name, [])
 
 
 def find_slots(schedule: list, catch_within_days: int) -> list[str]:
