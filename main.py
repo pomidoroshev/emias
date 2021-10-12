@@ -32,35 +32,63 @@ def get_appointment_id():
         json=req,
     )
     data = response.json()
-    result = data.get('result')
+    result = data.get("result")
     if result:
         appointment = result[0]
-        return appointment['id']
+        return appointment["id"]
 
     if "error" in data:
         logger.error(f"get_appointment_id error: {data['error']}")
         raise ValueError(f"get_appointment_id error: {data['error']}")
 
 
-def gen_id():
+def gen_id() -> str:
     return "".join(
         secrets.choice(string.ascii_letters + string.digits) for _ in range(21)
     )
 
 
-def earliest_slot(schedule: list) -> Optional[datetime]:
+def update_status(doctor_name: str, slots: list[str]) -> None:
+    try:
+        current_status = json.load(open("status.json"))
+    except Exception:
+        current_status = {}
+
+    if doctor_name in current_status:
+        current_status[doctor_name] = [*{*current_status[doctor_name], *slots}]
+    else:
+        current_status[doctor_name] = slots
+
+    json.dump(current_status, open("status.json", "w"))
+
+
+def load_status(doctor_name: str) -> list[str]:
+    try:
+        current_status = json.load(open("status.json"))
+    except Exception:
+        current_status = {}
+
+    return current_status.get(doctor_name, [])
+
+
+def find_slots(schedule: list, catch_within_days: int) -> list[str]:
+    result: list[str] = []
     if not schedule:
-        return None
+        return result
 
     for day in schedule:
         for schedule_by_slot in day["scheduleBySlot"]:
             for slot in schedule_by_slot["slot"]:
-                return datetime.fromisoformat(slot["startTime"]).replace(tzinfo=None)
+                slot_datetime = datetime.fromisoformat(slot["startTime"]).replace(
+                    tzinfo=None
+                )
+                if slot_datetime - timedelta(days=catch_within_days) <= datetime.now():
+                    result.append(slot_datetime.strftime("%Y-%m-%d %H:%M"))
 
-    return None
+    return result
 
 
-def get_schedule(doctor_name, appointment_id):
+def get_schedule(doctor_name: str, appointment_id) -> list:
     req = {
         "jsonrpc": "2.0",
         "id": gen_id(),
@@ -110,26 +138,22 @@ def send_email(subject, body="(no content)"):
         raise
 
 
-def notify(slot, doctor_name):
-    send_email(f"Свободный слот: {doctor_name} - {slot}")
-    json.dump(
-        {
-            "slot": str(slot),
-            "doctor_name": doctor_name,
-        },
-        open("status.json", "w"),
-    )
+def notify(slots: list[str], doctor_name: str) -> None:
+    if not slots:
+        return
+    if len(slots) == 1:
+        send_email(f"Свободный слот: {doctor_name} - {slots[0]}")
+    else:
+        send_email(f"Свободные слоты: {doctor_name}", ", ".join(slots))
+    update_status(doctor_name, slots)
 
 
-def has_already_notified(slot, doctor_name):
-    try:
-        status = json.load(open("status.json"))
-    except Exception:
-        return False
-    return status["slot"] == str(slot) and status["doctor_name"] == doctor_name
+def has_already_notified(slots: list[str], doctor_name: str) -> bool:
+    notified_slots = load_status(doctor_name)
+    return notified_slots == slots
 
 
-def run():
+def run() -> None:
     try:
         while True:
             try:
@@ -140,15 +164,11 @@ def run():
 
             for doctor_name in config["doctors"]:
                 schedule = get_schedule(doctor_name, appointment_id)
-                slot = earliest_slot(schedule)
-                if (
-                    slot
-                    and slot - timedelta(days=config["catch_within_days"])
-                    <= datetime.now()
-                    and not has_already_notified(slot, doctor_name)
-                ):
-                    logger.warning(f"Caught {slot} {doctor_name}")
-                    notify(slot, doctor_name)
+                slots = find_slots(schedule, config["catch_within_days"])
+                if slots and not has_already_notified(slots, doctor_name):
+                    logger.warning(f"Caught {slots} {doctor_name}")
+                    notify(slots, doctor_name)
+
             time.sleep(60)
     except Exception as e:
         logger.exception("Error")

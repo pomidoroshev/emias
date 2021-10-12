@@ -1,2 +1,6 @@
 loguru
 requests
+mypy
+black
+isort
+types-requests
