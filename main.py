@@ -131,7 +131,7 @@ def notify(slots: List[str], doctor_name: str) -> None:
 
 def has_already_notified(slots: List[str], doctor_name: str) -> bool:
     notified_slots = load_status(doctor_name)
-    return set(slots) - set(notified_slots) == 0
+    return not set(slots) - set(notified_slots)
 
 
 def run() -> None:
