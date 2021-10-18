@@ -89,8 +89,8 @@ def get_schedule(doctor_name: str, appointment_id: Optional[int]) -> list:
     data = response.json()
     if not "result" in data:
         if (
-            "error" in data
-            and data["error"]["data"]["code"] != "APPOINTMENT_RECEPTION_NOT_FOUND"
+            not data.get("error", {}).get("data", {}).get("code")
+            or data["error"]["data"]["code"] != "APPOINTMENT_RECEPTION_NOT_FOUND"
         ):
             logger.error(f"Some error: {data['error']}")
             return []
