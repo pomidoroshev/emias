@@ -101,7 +101,7 @@ def get_schedule(doctor_name: str, appointment_id: Optional[int]) -> list:
 def send_email(subject, body="(no content)"):
     msg = EmailMessage()
     msg["subject"] = subject
-    msg["From"] = "DD <notify@doroshev.com>"
+    msg["From"] = config["mail"]["from"]
     msg["To"] = config["mail"]["to"]
     msg.set_content(body)
 

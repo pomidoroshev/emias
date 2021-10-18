@@ -11,6 +11,7 @@
         "smtp_password": "some_password",
         "smtp_domain": "smtp.yandex.ru",
         "smtp_port": 465,
+        "from": "Some Name <some@user.com>",
         "to": "to@email.com"
     }
 }
